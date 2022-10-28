@@ -1,0 +1,8 @@
+lark-parser
+PyAutoGUI
+opencv-python
+SQLAlchemy==2.0.0b2
+dill
+
+pandas
+seaborn

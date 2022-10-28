@@ -1,0 +1,40 @@
+start: header mainlist
+header: RAW_STR
+mainlist: list
+
+// Structureal Rules
+keyvalue: _identifier _EQUALS _object
+list: (_object)*
+
+// Pseudo-objects (discarded in final tree)
+_identifier: _str_identifier | _num_identifier | _date_identifier
+_object: _atom | _LPAREN list _RPAREN | keyvalue
+_atom: _number | _integer | _date | _string | color
+
+// Terminal rules
+color: RAW_STR _LPAREN INTEGER INTEGER INTEGER _RPAREN
+_number: NUMBER
+_integer: INTEGER
+_date: DATE
+_string: RAW_STR | QUOT_STR
+_num_identifier: INTEGER
+_str_identifier: RAW_STR
+_date_identifier: DATE
+
+// Key tokens
+QUOT_STR: /"[^"]*"/
+RAW_STR: /[_a-zA-Z][_\-a-zA-Z0-9\.]+/
+DATE: /\d+\.\d\d?\.\d\d?/
+NUMBER: /\-?\d*\.\d+/
+INTEGER: /\-?\d+/
+
+// Needed for parsing but then thrown away for AST
+_EQUALS: "="
+_LPAREN: "{"
+_RPAREN: "}"
+
+// Completely ignored
+WS: /[ \t]+/
+%ignore WS
+LINE_CONT: "\n"
+%ignore LINE_CONT

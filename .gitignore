@@ -1,0 +1,13 @@
+# Python stuff
+*.pyc
+__pycache__
+
+# Venvs
+.venv
+.pypy
+
+# Saved db
+vic3.db
+
+# Screenshots created by puautogui
+.screenshot*.png
