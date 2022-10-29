@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 
+
 db_file = 'vic3.db'
 _engine = []
 

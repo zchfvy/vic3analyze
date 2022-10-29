@@ -17,6 +17,10 @@ log = logging.getLogger()
 def process(save_file):
     time_cap_start = time.time()
 
+    # Setup collectors here, before we load the DB
+    from tables.country_basics import CountryBasics
+    collectors = [CountryBasics]
+
     log.info(f"Parsing save file")
     parsed = parse_replay(save_file)
 
@@ -47,9 +51,6 @@ def process(save_file):
             log.error("Found a sample matching the current one already in the db!")
             raise Exception("Duplicate sample!")
 
-    # Setup collectors here
-    from tables.country_basics import CountryBasics
-    collectors = [CountryBasics]
 
     log.info(f"Collecting replay primary data")
     collected_data = []

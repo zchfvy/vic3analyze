@@ -14,6 +14,8 @@ class CountryBasics(Base):
     run: Mapped["RunMetadata"] = relationship()
 
     tag: Mapped[str] = mapped_column(primary_key=True)
+    db_id: Mapped[int] = mapped_column(primary_key=True)
+
     gdp: Mapped[float] = mapped_column()
     prestige: Mapped[float] = mapped_column()
     standard_of_living: Mapped[float] = mapped_column()
@@ -37,7 +39,10 @@ class CountryBasics(Base):
                 yield CountryBasics(
                     sample = sample_obj,
                     run = run_obj,
+
                     tag = v['definition'],
+                    db_id = int(k),
+
                     gdp = get_sampledata(v['gdp']),
                     prestige = get_sampledata(v['prestige']),
                     standard_of_living = get_sampledata(v['avgsoltrend']),
