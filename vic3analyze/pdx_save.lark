@@ -24,7 +24,7 @@ _date_identifier: DATE
 // Key tokens
 QUOT_STR: /"[^"]*"/
 RAW_STR: /[_a-zA-Z][_\-a-zA-Z0-9\.]+/
-DATE: /\d+\.\d\d?\.\d\d?/
+DATE: /\d+\.\d\d?\.\d\d?(.\d\d?)?/
 NUMBER: /\-?\d*\.\d+/
 INTEGER: /\-?\d+/
 
