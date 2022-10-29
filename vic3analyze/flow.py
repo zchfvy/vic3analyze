@@ -144,29 +144,39 @@ def grab_replay(callback, file):
 def capture_single_run(callback, until=None):
     run_game()
 
-    done = False
+    try:
+        done = False
+        last_time = time.time()
+        while not done:
+            time.sleep(0.5)
+            try:
+                save_f = os.path.join(pdx_saves_dir, 'autosave.v3')
+                # TODO: handle if no autosave file is present
+                ctime = os.stat(save_f).st_ctime
+                if ctime > last_time:
+                    date = grab_replay(callback, save_f)
+                    last_time = ctime
+                    if date > until:
+                        log.info("Finished captures for this run")
+                        done=True
+            except FileNotFoundError:
+                log.warning("Failed to capture file, maybe it's being written still?")
+                continue
+    finally:
+        log.error("Exception in capturing run!")
+        end_game()
 
-    last_time = time.time()
-    while not done:
-        time.sleep(0.5)
-        try:
-            save_f = os.path.join(pdx_saves_dir, 'autosave.v3')
-            # TODO: handle if no autosave file is present
-            ctime = os.stat(save_f).st_ctime
-            if ctime > last_time:
-                date = grab_replay(callback, save_f)
-                last_time = ctime
-                if date > until:
-                    log.info("Finished captures for this run")
-                    done=True
-        except FileNotFoundError:
-            log.warning("Failed to capture file, maybe it's being written still?")
-            continue
 
-    end_game()
-
-
-def run_single(callback, until=None):
+def run(callback, num_runs=1, until=None):
     startup_game()
-    capture_single_run(callback, until)
-    shutdown_game()
+    try:
+        if num_runs == 0:
+            while True:
+                capture_single_run(callback, until)
+        else:
+            for _ in range(num_runs):
+                capture_single_run(callback, until)
+                time.sleep(10)
+    finally:
+        log.error("Exception in running flow!")
+        shutdown_game()

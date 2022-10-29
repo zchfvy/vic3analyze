@@ -22,9 +22,10 @@ def replay_callback(filename):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--until', default='1935-12-31')
+parser.add_argument('--runs', default=1, type=int)
 
 args = parser.parse_args()
 
 until = dateparser.parse(args.until)
 
-flow.run_single(replay_callback, until)
+flow.run(replay_callback, num_runs=args.runs, until=until)
