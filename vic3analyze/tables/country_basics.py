@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..database import Base
+from database import Base
 
 class CountryBasics(Base):
     __tablename__ = "country_basics"

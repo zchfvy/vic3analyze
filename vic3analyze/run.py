@@ -4,6 +4,8 @@ import process_savegame
 from multiprocessing import Process
 
 import logging
+import argparse
+from dateutil import parser as dateparser
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,5 +20,11 @@ def replay_callback(filename):
     p = Process(target=replay_proc, args=(filename,))
     p.start()
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--until', default='1935-12-31')
 
-flow.run_single(replay_callback)
+args = parser.parse_args()
+
+until = dateparser.parse(args.until)
+
+flow.run_single(replay_callback, until)
