@@ -16,7 +16,7 @@ class RunMetadata(Base):
 
     @staticmethod
     def collect(replay_data):
-        ml = replay_data['mainlist']
+        ml = replay_data
         meta = ml['meta_data']
         return RunMetadata(
                 id=ml['playthrough_id'],
@@ -37,7 +37,7 @@ class SampleMetadata(Base):
     @staticmethod
     def collect(replay_data, run_obj):
         # TODO : assertation that run_obj actually comes from the same replay
-        ml = replay_data['mainlist']
+        ml = replay_data
         meta = ml['meta_data']
         return SampleMetadata(
                 run=run_obj,

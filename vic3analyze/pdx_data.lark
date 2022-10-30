@@ -1,6 +1,4 @@
-start: header mainlist
-header: RAW_STR
-mainlist: list
+start: list
 
 // Structureal Rules
 keyvalue: _identifier _EQUALS _object

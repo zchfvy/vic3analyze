@@ -9,7 +9,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.orm import Session
 
 import tables
-from parse import parse_replay
+from parse import parse
 from database import get_db
 
 log = logging.getLogger()
@@ -19,10 +19,11 @@ def process(save_file):
 
     # Setup collectors here, before we load the DB
     from tables.country_basics import CountryBasics
-    collectors = [CountryBasics]
+    from tables.market_goods import MarketGoods
+    collectors = [CountryBasics, MarketGoods]
 
     log.info(f"Parsing save file")
-    parsed = parse_replay(save_file)
+    parsed = parse(save_file)
 
     # Run collection before connecting to DB
 

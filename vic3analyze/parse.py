@@ -3,6 +3,7 @@ import platform
 from datetime import datetime
 from collections import namedtuple
 import logging
+import re
 
 import lark
 
@@ -13,10 +14,10 @@ Keyval = namedtuple('Keyval', ['k', 'v'])
 
 
 my_dir = os.path.dirname(os.path.realpath(__file__))
-lalr = lark.Lark(open(os.path.join(my_dir, 'pdx_save.lark')).read(), parser='lalr')
+lalr = lark.Lark(open(os.path.join(my_dir, 'pdx_data.lark')).read(), parser='lalr')
 
 
-def parse_replay(filename):
+def parse(filename):
     pyver = platform.python_implementation()
     if pyver == 'CPython':
         # Try to dfind and relaunch as pypy
@@ -45,9 +46,18 @@ def parse_replay(filename):
                 """)
 
 
+
     log.info(f"Reading savefile")
     with open(filename, 'r') as savefile:
         rawdata = savefile.read()
+
+    # Strip header
+    hd_end = rawdata.find('\n')
+    header = rawdata[:hd_end]
+    rawdata = rawdata[hd_end+1:]
+    # Remove comments
+    rawdata = re.sub('#.*', '', rawdata)
+
     log.info(f"Parsing save data into AST")
     ast = lalr.parse(rawdata)
     log.info(f"Parsing AST into data structure")
@@ -74,13 +84,6 @@ def parse_tree(node):
         return parse_token(node)
 
     if node.data == 'start':
-        res = {}
-        res['header'] = parse_tree(node.children[0])
-        res['mainlist'] = parse_tree(node.children[1])
-        return res
-    elif node.data == 'header':
-        return parse_tree(node.children[0])
-    elif node.data == 'mainlist':
         return parse_tree(node.children[0])
     elif node.data == 'keyvalue':
         key = parse_tree(node.children[0])
@@ -123,7 +126,7 @@ if __name__ == '__main__':
     f_in = sys.argv[1]
     f_out = sys.argv[2]
 
-    result = parse_replay(f_in)
+    result = parse(f_in)
 
     with open(f_out, 'wb') as f:
         dill.dump(result, f)

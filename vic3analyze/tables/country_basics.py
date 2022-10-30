@@ -29,7 +29,7 @@ class CountryBasics(Base):
 
     @staticmethod
     def collect(replay_data, sample_obj, run_obj):
-        ml = replay_data['mainlist']
+        ml = replay_data
 
         country_db = ml['country_manager']['database']
         for k, v in ml['country_manager']['database'].items():
