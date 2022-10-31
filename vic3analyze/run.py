@@ -7,7 +7,10 @@ import logging
 import argparse
 from dateutil import parser as dateparser
 
-logging.basicConfig(level=logging.INFO)
+import coloredlogs
+
+# logging.basicConfig(level=logging.INFO)
+coloredlogs.install(level='INFO')
 
 def replay_proc(filename):
     logging.basicConfig(level=logging.DEBUG)

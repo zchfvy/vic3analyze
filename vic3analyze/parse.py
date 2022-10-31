@@ -7,7 +7,7 @@ import re
 
 import lark
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 Color = namedtuple('Color', ['r', 'g', 'b'])
 Keyval = namedtuple('Keyval', ['k', 'v'])
@@ -120,8 +120,9 @@ def parse_tree(node):
 if __name__ == '__main__':
     import sys
     import dill
+    import coloredlogs
 
-    logging.basicConfig(level=logging.DEBUG)
+    coloredlogs.install(level='DEBUG')
 
     f_in = sys.argv[1]
     f_out = sys.argv[2]

@@ -10,7 +10,7 @@ import random
 import logging
 import re
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 paused = False
 abort = False
@@ -39,7 +39,7 @@ process_re = re.compile(r'^Processing tick: ([0-9.]+)$')
 
 def wait_until_found(wait_image, timeout=60):
     t = 0
-    print(f"Waiting to see {wait_image}")
+    log.info(f"Waiting to see {wait_image}")
     while True:
         res = pyautogui.locateOnScreen(f"vic3analyze/captures/{wait_image}.png", confidence=0.9,
                                              grayscale=True)
@@ -52,7 +52,7 @@ def wait_until_found(wait_image, timeout=60):
 
 
 def try_click_or_abort(button_image, retry=10, rt_delay=0.5, esc_on_retry=False):
-    print(f"Looking for button {button_image}")
+    log.info(f"Looking for button {button_image}")
     while True:
         try:
             res = pyautogui.locateCenterOnScreen(f"vic3analyze/captures/{button_image}.png", confidence=0.9,

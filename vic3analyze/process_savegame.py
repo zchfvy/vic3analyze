@@ -12,7 +12,7 @@ import tables
 from parse import parse
 from database import get_db
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 
 def process(save_file):
     time_cap_start = time.time()
@@ -40,8 +40,6 @@ def process(save_file):
     sample_meta = SampleMetadata.collect(parsed, run_meta)
 
     with Session(get_db()) as session:
-        log.info(sample_meta.game_date)
-        log.info(sample_meta.run_id)
         stmt = select(SampleMetadata).where(
                 and_(
                 SampleMetadata.game_date == sample_meta.game_date,
