@@ -6,14 +6,13 @@ from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 
 
-db_file = 'vic3.db'
 _engine = []
 
 class Base(DeclarativeBase):
     pass
 
 
-def get_db():
+def get_db(db_file='vic3.db'):
     if not _engine:
         db_full_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', db_file))
         must_instantiate = not os.path.exists(db_full_path)
