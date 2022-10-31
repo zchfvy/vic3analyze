@@ -59,4 +59,4 @@ def get_sampledata(samp_in):
     # TODO : probably should have ab etter solution than zero when not found!
     if 'channels' not in samp_in:
         return 0
-    return samp_in['channels'][0]['values'][0]
+    return samp_in['channels'][0]['values'][-1]
