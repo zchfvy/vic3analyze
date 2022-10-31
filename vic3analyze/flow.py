@@ -141,13 +141,16 @@ def grab_replay(callback, file):
     return date
 
 
-def capture_single_run(callback, until=None):
+def capture_single_run(callback, game_proc, until=None):
     run_game()
 
     try:
         done = False
         last_time = time.time()
         while not done:
+            if game_proc.poll():
+                log.error("Game seems to have crashed, aborting run!")
+                return
             time.sleep(0.5)
             try:
                 save_f = os.path.join(pdx_saves_dir, 'autosave.v3')
@@ -162,21 +165,26 @@ def capture_single_run(callback, until=None):
             except FileNotFoundError:
                 log.warning("Failed to capture file, maybe it's being written still?")
                 continue
-    finally:
+    except:
         log.error("Exception in capturing run!")
+    finally:
         end_game()
 
 
 def run(callback, num_runs=1, until=None):
-    startup_game()
+    proc = startup_game()
     try:
+        if proc.poll():
+            log.error("Game seems to have crashed, restarting!")
+            proc = startup_game()
         if num_runs == 0:
             while True:
-                capture_single_run(callback, until)
+                capture_single_run(callback, proc, until)
         else:
             for _ in range(num_runs):
-                capture_single_run(callback, until)
+                capture_single_run(callback, proc, until)
                 time.sleep(10)
-    finally:
+    except:
         log.error("Exception in running flow!")
+    finally:
         shutdown_game()
