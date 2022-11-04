@@ -18,7 +18,7 @@ elif platform == "win32":
     save_dir = os.path.expandvars(r'%HOMEPATH%\Documents\Paradox Interactive\Victoria 3\save games')
 
 _config['game_dir'] = game_dir
-_config['saves_dir'] = saves_dir
+_config['saves_dir'] = save_dir
 
 
 def get_config(key):
