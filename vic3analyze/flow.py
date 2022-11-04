@@ -163,7 +163,7 @@ def capture_single_run(callback, game_proc, until=None):
                 log.warning("Failed to capture file, maybe it's being written still?")
                 continue
     except:
-        log.error("Exception in capturing run!")
+        log.exception("Exception in running flow!")
     finally:
         end_game()
 
@@ -182,6 +182,6 @@ def run(callback, num_runs=1, until=None):
                 capture_single_run(callback, proc, until)
                 time.sleep(10)
     except:
-        log.error("Exception in running flow!")
+        log.exception("Exception in running flow!")
     finally:
         shutdown_game()

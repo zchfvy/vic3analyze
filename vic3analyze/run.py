@@ -56,6 +56,8 @@ try:
         log.info("Enquing work item")
         task_queue.put(filename)
     flow.run(replay_callback, num_runs=args.runs, until=until)
+except:
+    log.exception("Analyzer exiting with uncaught exception")
 finally:
     for i in range(args.num_workers):
         task_queue.put('STOP')
