@@ -10,6 +10,8 @@ import random
 import logging
 import re
 
+import conf
+
 log = logging.getLogger(__name__)
 
 paused = False
@@ -30,9 +32,6 @@ abort = False
 time.sleep(3)
 
 savedir = tempfile.mkdtemp()
-pdx_saves_dir = os.path.expanduser('~/.local/share/Paradox Interactive/Victoria 3/save games/')
-launcher_bin = os.path.expanduser('~/.steam/steam/steamapps/common/Victoria 3/launcher/dowser')
-game_bin = os.path.expanduser('~/.steam/steam/steamapps/common/Victoria 3/binaries/victoria3')
 
 process_re = re.compile(r'^Processing tick: ([0-9.]+)$')
 
@@ -83,15 +82,11 @@ def try_click_or_abort(button_image, retry=10, rt_delay=0.5, esc_on_retry=False)
 
 def startup_game():
     log.info("Starting game client")
+    game_bin = os.path.join(conf.get_config('game_dir'), 'binaries', 'victoria3')
     p = subprocess.Popen([game_bin, '-debug_mode'],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(10)  # TODO : find a better way to wait for game launch
     return p
-    # Popen([launcher_bin])
-    # time.sleep(10)
-    # try_click_or_abort('launcher_ignoresteam')
-    # try_click_or_abort('launcher_play')
-    # time.sleep(20)
 
 
 def begin_newgame():
@@ -126,6 +121,7 @@ def grab_replay(callback, file):
     # Copy file to tmp dir
     rnd_asc = ''.join(random.choice(string.ascii_letters) for _ in range(6))
     save_fname = 'analyze_{}.v3'.format(rnd_asc)
+    pdx_saves_dir = conf.get_config('saves_dir')
     new_name = os.path.join(pdx_saves_dir, save_fname)
     shutil.copyfile(file, new_name)
 
@@ -148,10 +144,11 @@ def capture_single_run(callback, game_proc, until=None):
         done = False
         last_time = time.time()
         while not done:
-            if game_proc.poll():
+            if game_proc.poll() is not None:
                 log.error("Game seems to have crashed, aborting run!")
                 return
             time.sleep(0.5)
+            pdx_saves_dir = conf.get_config('saves_dir')
             try:
                 save_f = os.path.join(pdx_saves_dir, 'autosave.v3')
                 # TODO: handle if no autosave file is present

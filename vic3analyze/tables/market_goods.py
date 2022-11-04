@@ -18,7 +18,13 @@ class MarketGoods(Base):
     market_id: Mapped[int] = mapped_column(primary_key=True)
 
     owner_db_id: Mapped[int] = mapped_column(ForeignKey('country_basics.db_id'))
-    owner_country: Mapped["CountryBasics"] = relationship()
+    owner_country: Mapped["CountryBasics"] = relationship(
+            primaryjoin="and_("
+            "CountryBasics.db_id == MarketGoods.owner_db_id,"
+            "CountryBasics.game_date == MarketGoods.game_date,"
+            "CountryBasics.run_id == MarketGoods.run_id)",
+            foreign_keys=[owner_db_id, game_date, run_id],
+            overlaps="sample,run")
 
     buildings_supply: Mapped[int] = mapped_column()
     buildings_demand: Mapped[int] = mapped_column()
