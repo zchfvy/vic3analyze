@@ -23,6 +23,8 @@ def worker(queue):
         log.info(f"Got replay item ({queue.qsize()} in queue)")
         try:
             process_savegame.process(replayfile)
+        except:
+            log.exception("Uncaught exception in worker")
         finally:
             os.remove(replayfile)  # TODO : this is a bit bodgey and manual
 

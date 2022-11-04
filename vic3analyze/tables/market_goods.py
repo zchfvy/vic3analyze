@@ -1,10 +1,13 @@
 from datetime import datetime
+import logging
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
 import game_static
+
+log = logging.getLogger(__name__)
 
 class MarketGoods(Base):
     __tablename__ = "market_goods"
@@ -53,7 +56,10 @@ class MarketGoods(Base):
                 continue
             goods_in = b.get('input_goods', {}).get('goods',{})
             goods_out = b.get('output_goods', {}).get('goods',{})
-            market = ml['states']['database'][b['state']]['market']
+            try:
+                market = ml['states']['database'][b['state']]['market']
+            except KeyError:
+                log.error(f"State ID {b['state']} missing from states table!")
             for good, amount in goods_in.items():
                 goodname = goods_lookup[good]
                 mkt_goods[market][goodname]['bld_demand'] += amount
