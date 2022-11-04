@@ -20,7 +20,7 @@ def worker(queue):
     log = logging.getLogger("worker")
     log.info("Process thread running")
     for replayfile in iter(queue.get, 'STOP'):
-        log.info("Got replay item")
+        log.info(f"Got replay item ({queue.qsize()} in queue)")
         try:
             process_savegame.process(replayfile)
         finally:
