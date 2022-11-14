@@ -11,3 +11,6 @@ __pycache__
 
 # Screenshots created by puautogui
 .screenshot*.png
+
+# jupyter workbooks
+jupyter/
