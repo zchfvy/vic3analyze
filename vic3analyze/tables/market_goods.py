@@ -83,6 +83,11 @@ class MarketGoods(Base):
 
 
         for market, market_data in mkt_goods.items():
+            if not isinstance(market, int):
+                if market == "none":
+                    continue
+                log.error("Unknown value for market!")
+                continue
             mkt_owner = replay_data['market_manager']['database'][market]['owner']
             for good, good_data in market_data.items():
                 yield MarketGoods(
