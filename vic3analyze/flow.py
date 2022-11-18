@@ -117,7 +117,7 @@ def shutdown_game():
     try_click_or_abort('mainmenu_exit')
 
 
-def grab_replay(callback, file):
+def grab_replay(callback, file, run_internal_id, **kwargs):
     # Copy file to tmp dir
     rnd_asc = ''.join(random.choice(string.ascii_letters) for _ in range(6))
     save_fname = 'analyze_{}.v3'.format(rnd_asc)
@@ -133,12 +133,14 @@ def grab_replay(callback, file):
     # TODO: instantiate new process here and also make sureo ld files
     #       are deleted
     log.info(f"Capturing save file {new_name} for {date}")
-    callback(new_name)
+    callback(new_name, run_internal_id)
     return date
 
 
-def capture_single_run(callback, game_proc, until=None):
+def capture_single_run(callback, game_proc, **kwargs):
     run_game()
+
+    run_internal_id = ''.join(random.choice(string.ascii_lowercase) for _ in range(8))
 
     try:
         done = False
@@ -154,9 +156,9 @@ def capture_single_run(callback, game_proc, until=None):
                 # TODO: handle if no autosave file is present
                 ctime = os.stat(save_f).st_ctime
                 if ctime > last_time:
-                    date = grab_replay(callback, save_f)
+                    date = grab_replay(callback, save_f, run_internal_id, **kwargs)
                     last_time = ctime
-                    if date > until:
+                    if 'until' in kwargs and date > kwargs['until']:
                         log.info("Finished captures for this run")
                         done=True
             except FileNotFoundError:
@@ -165,23 +167,26 @@ def capture_single_run(callback, game_proc, until=None):
     except:
         log.exception("Exception in running flow!")
     finally:
-        end_game()
+        if game_proc.poll() is None:
+            end_game()
 
 
-def run(callback, num_runs=1, until=None):
+def run(callback, **kwargs):
     proc = startup_game()
+    num_runs = kwargs.get('num_runs', 1)
     try:
         if proc.poll():
             log.error("Game seems to have crashed, restarting!")
             proc = startup_game()
         if num_runs == 0:
             while True:
-                capture_single_run(callback, proc, until)
+                capture_single_run(callback, proc, **kwargs)
         else:
             for _ in range(num_runs):
-                capture_single_run(callback, proc, until)
+                capture_single_run(callback, proc, **kwargs)
                 time.sleep(10)
     except:
         log.exception("Exception in running flow!")
     finally:
-        shutdown_game()
+        if proc.poll() is None:
+            shutdown_game()

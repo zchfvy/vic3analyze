@@ -15,14 +15,23 @@ coloredlogs.install(level='INFO')
 
 log = logging.getLogger(__name__)
 
-def worker(queue):
+def worker(queue, collect_only):
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger("worker")
     log.info("Process thread running")
-    for replayfile in iter(queue.get, 'STOP'):
+    for replayfile, run_internal_id in iter(queue.get, 'STOP'):
         log.info(f"Got replay item ({queue.qsize()} in queue)")
         try:
-            process_savegame.process(replayfile)
+            if collect_only:
+                import zipfile
+                output_dir = './output'  # TODO : determine output dir better
+                zf_name = os.path.join(output_dir, f"run_{run_internal_id}.zip")
+                rf_name = os.path.basename(replayfile)
+                with zipfile.ZipFile(zf_name, 'a', compression=zipfile.ZIP_DEFLATED) as zf:
+                    zf.write(replayfile, arcname=rf_name)
+            else:
+                process_savegame.process(replayfile)
+                
         except:
             log.exception("Uncaught exception in worker")
         finally:
@@ -36,6 +45,7 @@ parser.add_argument('--vic3')
 parser.add_argument('--save-dir')
 
 parser.add_argument('--num-workers', default=6, type=int)
+parser.add_argument('--collect-only', action='store_true')
 
 args = parser.parse_args()
 
@@ -50,11 +60,11 @@ if args.save_dir is not None:
 task_queue = Queue()
 try:
     for i in range(args.num_workers):
-        Process(target=worker, args=(task_queue,)).start()
+        Process(target=worker, args=(task_queue, args.collect_only)).start()
 
-    def replay_callback(filename):
+    def replay_callback(filename, run_id):
         log.info("Enquing work item")
-        task_queue.put(filename)
+        task_queue.put((filename, run_id))
     flow.run(replay_callback, num_runs=args.runs, until=until)
 except:
     log.exception("Analyzer exiting with uncaught exception")
