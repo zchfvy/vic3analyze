@@ -46,8 +46,14 @@ parser.add_argument('--save-dir')
 
 parser.add_argument('--num-workers', default=6, type=int)
 parser.add_argument('--collect-only', action='store_true')
+parser.add_argument('--process-offline-zip', default=None)
 
 args = parser.parse_args()
+
+if args.process_offline_zip and args.collect_only:
+    log.error("""\
+    --collect-only and --process-ofline-zip cannot be used at the same time""")
+    exit(1)
 
 until = dateparser.parse(args.until)
 if args.vic3 is not None:
@@ -65,7 +71,23 @@ try:
     def replay_callback(filename, run_id):
         log.info("Enquing work item")
         task_queue.put((filename, run_id))
-    flow.run(replay_callback, num_runs=args.runs, until=until)
+
+    if args.process_offline_zip is not None:
+        import zipfile
+        import tempfile
+        import time
+        with zipfile.ZipFile(args.process_offline_zip, 'r') as zf:
+            members = zf.namelist()
+            processing_dir = './output'
+            for m in members:
+                zf.extract(m, processing_dir)
+                fname = os.path.join(processing_dir, m)
+                replay_callback(fname, args.process_offline_zip)
+                while task_queue.qsize() > args.num_workers:
+                    time.sleep(1)
+
+    else:
+        flow.run(replay_callback, num_runs=args.runs, until=until)
 except:
     log.exception("Analyzer exiting with uncaught exception")
 finally:

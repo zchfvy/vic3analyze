@@ -127,8 +127,10 @@ if __name__ == '__main__':
     f_in = sys.argv[1]
     f_out = sys.argv[2]
 
+    log.info("Reading data from replay file")
     result = parse(f_in)
 
     with open(f_out, 'wb') as f:
+        log.info("Dumping data to dill")
         dill.dump(result, f)
 
