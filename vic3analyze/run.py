@@ -31,11 +31,14 @@ def worker(queue, collect_only):
                     zf.write(replayfile, arcname=rf_name)
             else:
                 process_savegame.process(replayfile)
-                
+        except process_savegame.DuplicateSampleError:
+            continue
         except:
             log.exception("Uncaught exception in worker")
+            queue.put((replayfile, run_internal_id))
         finally:
-            os.remove(replayfile)  # TODO : this is a bit bodgey and manual
+            if os.path.exists(replayfile):
+                os.remove(replayfile)  # TODO : this is a bit bodgey and manual
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--until', default='1935-12-31')
@@ -79,10 +82,14 @@ try:
         with zipfile.ZipFile(args.process_offline_zip, 'r') as zf:
             members = zf.namelist()
             processing_dir = './output'
+            last_sub = time.time()
             for m in members:
+                if time.time() - last_sub < 1:
+                    time.sleep(2)  # smear times of processes
                 zf.extract(m, processing_dir)
                 fname = os.path.join(processing_dir, m)
                 replay_callback(fname, args.process_offline_zip)
+                last_sub = time.time()
                 while task_queue.qsize() > args.num_workers:
                     time.sleep(1)
 

@@ -14,6 +14,9 @@ from database import get_db
 
 log = logging.getLogger(__name__)
 
+class DuplicateSampleError(Exception):
+    pass
+
 def process(save_file):
     time_cap_start = time.time()
 
@@ -48,7 +51,7 @@ def process(save_file):
         existing_sample = session.scalars(stmt).first()
         if existing_sample is not None:
             log.error("Found a sample matching the current one already in the db!")
-            raise Exception("Duplicate sample!")
+            raise DuplicateSampleError()
 
 
     log.info(f"Collecting replay primary data")
