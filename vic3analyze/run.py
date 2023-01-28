@@ -9,6 +9,8 @@ import coloredlogs
 import process_savegame
 import flow
 import conf
+import tempfile
+from tqdm import tqdm
 
 # logging.basicConfig(level=logging.INFO)
 coloredlogs.install(level='INFO')
@@ -81,17 +83,17 @@ try:
         import time
         with zipfile.ZipFile(args.process_offline_zip, 'r') as zf:
             members = zf.namelist()
-            processing_dir = './output'
             last_sub = time.time()
-            for m in members:
-                if time.time() - last_sub < 1:
-                    time.sleep(2)  # smear times of processes
-                zf.extract(m, processing_dir)
-                fname = os.path.join(processing_dir, m)
-                replay_callback(fname, args.process_offline_zip)
-                last_sub = time.time()
-                while task_queue.qsize() > args.num_workers:
-                    time.sleep(1)
+            with tempfile.TemporaryDirectory() as tmpdir:
+                for m in tqdm(members):
+                    if time.time() - last_sub < 1:
+                        time.sleep(2)  # smear times of processes
+                    zf.extract(m, tmpdir)
+                    fname = os.path.join(tmpdir, m)
+                    replay_callback(fname, args.process_offline_zip)
+                    last_sub = time.time()
+                    while task_queue.qsize() > args.num_workers:
+                        time.sleep(1)
 
     else:
         flow.run(replay_callback, num_runs=args.runs, until=until)

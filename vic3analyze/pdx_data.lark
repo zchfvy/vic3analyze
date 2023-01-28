@@ -5,12 +5,13 @@ keyvalue: _identifier _EQUALS _object
 list: (_object)*
 
 // Pseudo-objects (discarded in final tree)
-_identifier: _str_identifier | _num_identifier | _date_identifier
-_object: _atom | _LPAREN list _RPAREN | keyvalue
-_atom: _number | _integer | _date | _string | color
+_identifier: _str_identifier | _num_identifier | _date_identifier | _AT _variable
+_object: _atom | _LBRACE list _RBRACE | keyvalue
+_atom: _number | _integer | _date | _string | color | _AT _variable | _AT _LBRACK _equation _RBRACK
+_equation: _LPAREN _equation _RPAREN | _equation OPERATOR _equation | _variable | _number | _integer
 
 // Terminal rules
-color: RAW_STR _LPAREN INTEGER INTEGER INTEGER _RPAREN
+color: RAW_STR _LBRACE INTEGER INTEGER INTEGER _RBRACE
 _number: NUMBER
 _integer: INTEGER
 _date: DATE
@@ -18,6 +19,8 @@ _string: RAW_STR | QUOT_STR
 _num_identifier: INTEGER
 _str_identifier: RAW_STR
 _date_identifier: DATE
+_variable: VARIABLE
+
 
 // Key tokens
 QUOT_STR: /"[^"]*"/
@@ -25,11 +28,18 @@ RAW_STR: /[_a-zA-Z][_\-a-zA-Z0-9\.]+/
 DATE: /\d+\.\d\d?\.\d\d?(.\d\d?)?/
 NUMBER: /\-?\d*\.\d+/
 INTEGER: /\-?\d+/
+VARIABLE: /[_a-z]+/
+OPERATOR: /[\+\-\/*]/
 
 // Needed for parsing but then thrown away for AST
 _EQUALS: "="
-_LPAREN: "{"
-_RPAREN: "}"
+_LBRACE: "{"
+_RBRACE: "}"
+_LPAREN: "("
+_RPAREN: ")"
+_LBRACK: "["
+_RBRACK: "]"
+_AT: "@"
 
 // Completely ignored
 WS: /[ \t]+/

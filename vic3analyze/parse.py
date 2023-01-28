@@ -4,6 +4,7 @@ from datetime import datetime
 from collections import namedtuple
 import logging
 import re
+import signal
 
 import lark
 
@@ -16,7 +17,7 @@ Keyval = namedtuple('Keyval', ['k', 'v'])
 my_dir = os.path.dirname(os.path.realpath(__file__))
 lalr = lark.Lark(open(os.path.join(my_dir, 'pdx_data.lark')).read(), parser='lalr')
 
-
+@profile
 def parse(filename):
     pyver = platform.python_implementation()
     if pyver == 'CPython':
@@ -37,6 +38,13 @@ def parse(filename):
                     __file__, filename, out_file
                     ])
                 res = p.wait()
+                if res != 0:
+                    if res < 0:
+                        sig = signal.Signals(-res)
+                        log.error(f"Pypy process terminated by signal {-res} ({sig})")
+                        raise Exception(f"Script terminated")
+                    else:
+                        raise Exception(f"Error in PyPy: Return code {res}!")
                 log.info("""Reading back data from PyPy""")
                 with open(out_file, 'rb') as f:
                     return dill.load(f)
@@ -51,15 +59,24 @@ def parse(filename):
     with open(filename, 'r') as savefile:
         rawdata = savefile.read()
 
-    # Strip header
-    hd_end = rawdata.find('\n')
-    header = rawdata[:hd_end]
-    rawdata = rawdata[hd_end+1:]
+    # HACK, some files start with wierd high-unicode bytes that break the
+    # parser
+    if ord(rawdata[0]) > 127:
+        rawdata = rawdata[1:]
+    # Strip header for replays only
+    rawdata = re.sub('^SAV[0-9a-f]{20}', '', rawdata)
     # Remove comments
-    rawdata = re.sub('#.*', '', rawdata)
+    rawdata = re.sub('#.*', '', rawdata).strip()
+
 
     log.info(f"Parsing save data into AST")
-    ast = lalr.parse(rawdata)
+    try:
+        ast = lalr.parse(rawdata)
+    except:
+        print("Error in parsing pre-processed data. Data in parse.out")
+        with open('parse.out', 'w') as f:
+            f.write(rawdata)
+        raise
     log.info(f"Parsing AST into data structure")
     return parse_tree(ast)
 
@@ -133,4 +150,5 @@ if __name__ == '__main__':
     with open(f_out, 'wb') as f:
         log.info("Dumping data to dill")
         dill.dump(result, f)
-
+    log.info("Completed succesfully")
+    exit(0)
