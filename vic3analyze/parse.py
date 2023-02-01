@@ -17,7 +17,6 @@ Keyval = namedtuple('Keyval', ['k', 'v'])
 my_dir = os.path.dirname(os.path.realpath(__file__))
 lalr = lark.Lark(open(os.path.join(my_dir, 'pdx_data.lark')).read(), parser='lalr')
 
-@profile
 def parse(filename):
     pyver = platform.python_implementation()
     if pyver == 'CPython':
