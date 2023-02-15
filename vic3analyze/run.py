@@ -2,6 +2,7 @@ import os
 from multiprocessing import Process, Queue
 import logging
 import argparse
+import time
 
 from dateutil import parser as dateparser
 import coloredlogs
@@ -37,9 +38,11 @@ def worker(queue, collect_only):
             continue
         except:
             log.exception("Uncaught exception in worker")
+            time.sleep(1)  # Back off a bit to controll error rate
             queue.put((replayfile, run_internal_id))
-        finally:
+        else:
             if os.path.exists(replayfile):
+                log.info(f"Removing file {replayfile}")
                 os.remove(replayfile)  # TODO : this is a bit bodgey and manual
 
 parser = argparse.ArgumentParser()
@@ -88,12 +91,19 @@ try:
                 for m in tqdm(members):
                     if time.time() - last_sub < 1:
                         time.sleep(2)  # smear times of processes
+                    log.info(f"Extracting {m} from archive")
                     zf.extract(m, tmpdir)
                     fname = os.path.join(tmpdir, m)
+                    if not os.path.exists(fname):
+                        log.error(f"Failed to extract file {fname}")
+                        continue
                     replay_callback(fname, args.process_offline_zip)
                     last_sub = time.time()
                     while task_queue.qsize() > args.num_workers:
                         time.sleep(1)
+                while not task_queue.empty():
+                    time.sleep(1)
+                time.sleep(1)  # bit extra to allow files to be read
 
     else:
         flow.run(replay_callback, num_runs=args.runs, until=until)

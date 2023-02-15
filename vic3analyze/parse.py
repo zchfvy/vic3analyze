@@ -8,6 +8,8 @@ import signal
 
 import lark
 
+import binformat
+
 log = logging.getLogger(__name__)
 
 Color = namedtuple('Color', ['r', 'g', 'b'])
@@ -18,6 +20,16 @@ my_dir = os.path.dirname(os.path.realpath(__file__))
 lalr = lark.Lark(open(os.path.join(my_dir, 'pdx_data.lark')).read(), parser='lalr')
 
 def parse(filename):
+    if filename.endswith('.msgpack'):
+        with open(filename, 'rb') as f:
+            return binformat.load(f)
+    elif filename.endswith('.txt'):
+        pass # parsing data file
+    elif filename.endswith('.v3'):
+        pass # Parsing savegame
+    else:
+        raise Exception(f"Unkown filetype for {filename}")
+
     pyver = platform.python_implementation()
     if pyver == 'CPython':
         # Try to dfind and relaunch as pypy
@@ -25,7 +37,6 @@ def parse(filename):
         if os.path.exists(expected_pypy_dir):
             log.info("""PyPy detected, attempting parsing using it""")
             import tempfile
-            import dill
             from subprocess import Popen
             with tempfile.TemporaryDirectory() as tmpdir:
                 # To do this we must do a bit of black magic
@@ -46,7 +57,7 @@ def parse(filename):
                         raise Exception(f"Error in PyPy: Return code {res}!")
                 log.info("""Reading back data from PyPy""")
                 with open(out_file, 'rb') as f:
-                    return dill.load(f)
+                    return binformat.load(f)
         else:
             log.warn("""
                 Running parser on CPython is very slow, it is reccomended to use PyPy
@@ -135,8 +146,15 @@ def parse_tree(node):
 
 if __name__ == '__main__':
     import sys
-    import dill
+    import binformat
     import coloredlogs
+    import argparse
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('input')
+    parser.add_argument('output')
+    args = parser.parse_args()
 
     coloredlogs.install(level='DEBUG')
 
@@ -144,10 +162,10 @@ if __name__ == '__main__':
     f_out = sys.argv[2]
 
     log.info("Reading data from replay file")
-    result = parse(f_in)
+    result = parse(args.input)
 
-    with open(f_out, 'wb') as f:
-        log.info("Dumping data to dill")
-        dill.dump(result, f)
+    with open(args.output, 'wb') as f:
+        log.info("Dumping data")
+        binformat.dump(result, f)
     log.info("Completed succesfully")
     exit(0)

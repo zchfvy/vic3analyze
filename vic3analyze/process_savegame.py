@@ -25,7 +25,7 @@ def process(save_file):
     from tables.market_goods import MarketGoods
     collectors = [CountryBasics, MarketGoods]
 
-    log.info(f"Parsing save file")
+    log.info(f"Parsing save file: {save_file}")
     parsed = parse(save_file)
 
     # Run collection before connecting to DB
