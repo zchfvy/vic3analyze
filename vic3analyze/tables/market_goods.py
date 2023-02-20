@@ -40,7 +40,7 @@ class MarketGoods(Base):
     # pops_demand: Mapped[int] = mapped_column()
 
     @staticmethod
-    def get_needs_for_pop(pop_obj, state_obj, pop_id):
+    def get_needs_for_pop(pop_obj, state_obj, pop_id, culture_obj):
         state_id = pop_obj['location']
         res = defaultdict(int)
 
@@ -55,6 +55,9 @@ class MarketGoods(Base):
         goods_lookup_rev = {v:k for k, v in enumerate(goods_lookup)}
         pop_needs_lookup = list(pop_needs.keys())
         pop_needs_lookup_rev = {v:k for k, v in enumerate(pop_needs_lookup)}
+
+        obsession_mult = defines['NPops'][0]['OBSESSION_POP_NEED_EXPENSE_MULT']
+        taboo_mult = defines['NPops'][0]['TABOO_POP_NEED_EXPENSE_MULT']
         
 
         try:
@@ -71,6 +74,22 @@ class MarketGoods(Base):
         for need_id, amount in buy_package['goods'].items():
             need_index = pop_needs_lookup_rev[need_id]
             total_amount = num_pop_packages * amount
+
+            need = pop_needs[need_id]
+            if isinstance(need['entry'], list):
+                need_good_names = [e['goods'] for e in need['entry']]
+            else:
+                need_good_names = [need['entry']['goods']]
+
+            # Attenuate for obsessions and taboos
+            obsession_factor = 0
+            for good_name in need_good_names:
+                if good_name in culture_obj.get('obsessions', []):
+                    obsession_factor += obsession_mult/len(need_good_names)
+                if good_name in culture_obj.get('taboos', []):
+                    obsession_factor -= taboo_mult/len(need_good_names)
+            total_amount = total_amount * (1+obsession_factor)
+
             
             if state_needs is None:
                 # Special case wehre state has no needs for this pop
@@ -81,11 +100,6 @@ class MarketGoods(Base):
                 continue
 
             total_weight = sum(state_needs[need_index]['weights'].values())
-            need = pop_needs[need_id]
-            if isinstance(need['entry'], list):
-                need_good_names = [e['goods'] for e in need['entry']]
-            else:
-                need_good_names = [need['entry']['goods']]
             for good_name in need_good_names:
                 good_id = goods_lookup_rev[good_name]
                 weight = state_needs[need_index]['weights'][str(good_id)]
@@ -150,7 +164,8 @@ class MarketGoods(Base):
             if pop == 'none':
                 continue
             state = ml['states']['database'][str(pop['location'])]
-            needs = MarketGoods.get_needs_for_pop(pop, state, pop_id)
+            culture = ml['cultures']['database'][str(pop['culture'])]
+            needs = MarketGoods.get_needs_for_pop(pop, state, pop_id, culture)
             for good_id, amount in needs.items():
                 goodname = goods_lookup[good_id]
                 mkt_goods[state['market']][goodname]['pop_demand'] += amount
