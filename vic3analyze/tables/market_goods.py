@@ -96,7 +96,9 @@ class MarketGoods(Base):
                 base_units_bought = total_amount
                 base_price = goods_data[good_name]['cost']
                 units_bought = base_units_bought / base_price
-                res[good_id] += units_bought
+                default_good = need['default']
+                default_good_id = goods_lookup_rev[default_good]
+                res[default_good_id] += units_bought
                 continue
 
             total_weight = sum(state_needs[need_index]['weights'].values())
