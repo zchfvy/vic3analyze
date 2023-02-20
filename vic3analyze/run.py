@@ -87,10 +87,12 @@ try:
         with zipfile.ZipFile(args.process_offline_zip, 'r') as zf:
             members = zf.namelist()
             last_sub = time.time()
+            to_launch = args.num_workers
             with tempfile.TemporaryDirectory() as tmpdir:
                 for m in tqdm(members):
-                    if time.time() - last_sub < 1:
-                        time.sleep(2)  # smear times of processes
+                    if to_launch > 0:
+                        time.sleep(1)  # smear times of processes
+                        to_launch -= 1
                     log.info(f"Extracting {m} from archive")
                     zf.extract(m, tmpdir)
                     fname = os.path.join(tmpdir, m)
@@ -100,9 +102,9 @@ try:
                     replay_callback(fname, args.process_offline_zip)
                     last_sub = time.time()
                     while task_queue.qsize() > args.num_workers:
-                        time.sleep(1)
+                        time.sleep(.1)
                 while not task_queue.empty():
-                    time.sleep(1)
+                    time.sleep(.1)
                 time.sleep(1)  # bit extra to allow files to be read
 
     else:
