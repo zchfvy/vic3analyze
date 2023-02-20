@@ -39,9 +39,10 @@ class SampleMetadata(Base):
         # TODO : assertation that run_obj actually comes from the same replay
         ml = replay_data
         meta = ml['meta_data']
+        date_vals = [int(d) for d in ml['date'].split('.')]
         return SampleMetadata(
                 run=run_obj,
                 run_id=ml['playthrough_id'],
-                game_date=ml['date'],
+                game_date=datetime(*date_vals),
                 sample_cap_time_seconds=None,
                 wall_time=None)

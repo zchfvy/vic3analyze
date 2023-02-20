@@ -40,8 +40,12 @@ class MarketGoods(Base):
     # pops_demand: Mapped[int] = mapped_column()
 
     @staticmethod
-    def get_needs_for_pop(pop_obj, state_obj):
+    def get_needs_for_pop(pop_obj, state_obj, pop_id):
+        state_id = pop_obj['location']
         res = defaultdict(int)
+
+        if pop_obj.get('size_wa', 0) + pop_obj.get('size_dn', 0) == 0:
+            return res  # Early exit for size zero pops
 
         buy_packages = game_static.get_config_file('common/buy_packages/00_buy_packages.txt')
         pop_needs = game_static.get_config_file('common/pop_needs/00_pop_needs.txt')
@@ -53,7 +57,10 @@ class MarketGoods(Base):
         pop_needs_lookup_rev = {v:k for k, v in enumerate(pop_needs_lookup)}
         
 
-        state_needs = state_obj['pop_needs'][pop_obj['culture']]['pop_need_entry_data']
+        try:
+            state_needs = state_obj['pop_needs'][str(pop_obj['culture'])]['pop_need_entry_data']
+        except KeyError:
+            log.error(f"Could not find pop needs for pop '{pop_id}' with culture '{pop_obj['culture']}' in state '{state_id}', pop size {pop_obj.get('size_wa',0) + pop_obj.get('size_dn', 0)}")
         dependant_consuption = defines['NPops'][0]['DEPENDENT_CONSUMPTION_RATIO']
         effective_consumers = pop_obj.get('size_wa', 0) + pop_obj.get('size_dn', 0)* dependant_consuption
         num_pop_packages = effective_consumers / defines['NPops'][0]['POP_SIZE_PACKAGE']
@@ -61,7 +68,7 @@ class MarketGoods(Base):
         for need_id, amount in buy_package['goods'].items():
             need_index = pop_needs_lookup_rev[need_id]
             total_amount = num_pop_packages * amount
-            total_weight = sum(state_needs[need_index]['weights'])
+            total_weight = sum(state_needs[need_index]['weights'].values())
             need = pop_needs[need_id]
             if isinstance(need['entry'], list):
                 need_good_names = [e['goods'] for e in need['entry']]
@@ -69,8 +76,8 @@ class MarketGoods(Base):
                 need_good_names = [need['entry']['goods']]
             for good_name in need_good_names:
                 good_id = goods_lookup_rev[good_name]
-                weight = state_needs[need_index]['weights'][good_id]
-                pct = weight/total_weight
+                weight = state_needs[need_index]['weights'][str(good_id)]
+                pct = 0 if weight == 0 else weight/total_weight
                 base_units_bought = pct * total_amount
                 base_price = goods_data[good_name]['cost']
                 units_bought = base_units_bought / base_price
@@ -104,15 +111,16 @@ class MarketGoods(Base):
             goods_in = b.get('input_goods', {}).get('goods',{})
             goods_out = b.get('output_goods', {}).get('goods',{})
             try:
-                market = ml['states']['database'][b['state']]['market']
+                market = ml['states']['database'][str(b['state'])]['market']
             except KeyError:
                 log.error(f"State ID {b['state']} missing from states table!")
-            for good, amount in goods_in.items():
-                goodname = goods_lookup[good]
-                mkt_goods[market][goodname]['bld_demand'] += amount
-            for good, amount in goods_out.items():
-                goodname = goods_lookup[good]
-                mkt_goods[market][goodname]['bld_supply'] += amount
+            else:
+                for good, amount in goods_in.items():
+                    goodname = goods_lookup[int(good)]
+                    mkt_goods[market][goodname]['bld_demand'] += amount
+                for good, amount in goods_out.items():
+                    goodname = goods_lookup[int(good)]
+                    mkt_goods[market][goodname]['bld_supply'] += amount
 
         # Capture trade
         for k, v in ml['trade_route_manager']['database'].items():
@@ -129,8 +137,8 @@ class MarketGoods(Base):
         for pop_id, pop in ml['pops']['database'].items():
             if pop == 'none':
                 continue
-            state = ml['states']['database'][pop['location']]
-            needs = MarketGoods.get_needs_for_pop(pop, state)
+            state = ml['states']['database'][str(pop['location'])]
+            needs = MarketGoods.get_needs_for_pop(pop, state, pop_id)
             for good_id, amount in needs.items():
                 goodname = goods_lookup[good_id]
                 mkt_goods[state['market']][goodname]['pop_demand'] += amount
@@ -141,7 +149,7 @@ class MarketGoods(Base):
                     continue
                 log.error("Unknown value for market!")
                 continue
-            mkt_owner = replay_data['market_manager']['database'][market]['owner']
+            mkt_owner = replay_data['market_manager']['database'][str(market)]['owner']
             for good, good_data in market_data.items():
                 yield MarketGoods(
                         sample = sample_obj,
