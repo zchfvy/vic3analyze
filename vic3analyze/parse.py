@@ -26,12 +26,12 @@ def parse(filename):
         with open(filename, 'rb') as f:
             return binformat.load(f)
     elif filename.endswith('.v3'):
-        # USe rakly to parse
-        p = subprocess.Popen(['./bin/rakly', 'json', filename], stdout=subprocess.PIPE)
+        # USe rakaly to parse
+        p = subprocess.Popen(['./bin/rakaly', 'json', filename], stdout=subprocess.PIPE)
         out, err = p.communicate()
         return json.loads(out)
     elif filename.endswith('.txt'):
-        pass # parsing data file, don't use rakly as it has issues with some
+        pass # parsing data file, don't use rakaly as it has issues with some
     else:
         raise Exception(f"Unkown filetype for {filename}")
 
