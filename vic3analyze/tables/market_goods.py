@@ -178,7 +178,15 @@ class MarketGoods(Base):
                     continue
                 log.error("Unknown value for market!")
                 continue
-            mkt_owner = replay_data['market_manager']['database'][str(market)]['owner']
+            try:
+                mkt_obj = replay_data['market_manager']['database'][str(market)]
+            except KeyError:
+                log.error(f"Market ID '{market}' missing from markets table!")
+                continue  # TODO: deal with this
+            if mkt_obj == "none":
+                log.warning(f"Null market object with ID '{market}'")
+                continue  # TODO, deal with this
+            mkt_owner = mkt_obj['owner']
             for good, good_data in market_data.items():
                 yield MarketGoods(
                         sample = sample_obj,

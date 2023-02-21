@@ -1,14 +1,12 @@
-import os
-from multiprocessing import Process, Queue
 import logging
 import argparse
 import time
+import os
 
 from dateutil import parser as dateparser
 import coloredlogs
 
 import process_savegame
-import flow
 import conf
 import tempfile
 from tqdm import tqdm
@@ -17,6 +15,8 @@ from tqdm import tqdm
 coloredlogs.install(level='INFO')
 
 log = logging.getLogger(__name__)
+
+
 
 def worker(queue, collect_only):
     logging.basicConfig(level=logging.DEBUG)
@@ -71,46 +71,59 @@ if args.save_dir is not None:
     log.info(f"Setting saves location to '{args.save_dir}'")
     conf.set_config('game_dir', args.save_dir)
 
-task_queue = Queue()
 try:
-    for i in range(args.num_workers):
-        Process(target=worker, args=(task_queue, args.collect_only)).start()
 
-    def replay_callback(filename, run_id):
-        log.info("Enquing work item")
-        task_queue.put((filename, run_id))
 
     if args.process_offline_zip is not None:
         import zipfile
         import tempfile
-        import time
+        import worker_manager
         with zipfile.ZipFile(args.process_offline_zip, 'r') as zf:
+
             members = zf.namelist()
-            last_sub = time.time()
-            to_launch = args.num_workers
             with tempfile.TemporaryDirectory() as tmpdir:
-                for m in tqdm(members):
-                    if to_launch > 0:
-                        time.sleep(1)  # smear times of processes
-                        to_launch -= 1
+                def en(m):
                     log.info(f"Extracting {m} from archive")
-                    zf.extract(m, tmpdir)
-                    fname = os.path.join(tmpdir, m)
-                    if not os.path.exists(fname):
+                    try:
+                        zf.extract(m, tmpdir)
+                    except zipfile.BadZipFile:
                         log.error(f"Failed to extract file {fname}")
-                        continue
-                    replay_callback(fname, args.process_offline_zip)
-                    last_sub = time.time()
-                    while task_queue.qsize() > args.num_workers:
-                        time.sleep(.1)
-                while not task_queue.empty():
-                    time.sleep(.1)
-                time.sleep(1)  # bit extra to allow files to be read
+                        return None
+                    fname = os.path.join(tmpdir, m)
+                    return(fname)
+
+                def wk(replayfile):
+                    if not os.path.exists(replayfile):
+                        log.error(f"Replay file {replayfile} missing!")
+                        return
+                    try:
+                        process_savegame.process(replayfile)
+                    except process_savegame.DuplicateSampleError:
+                        pass
+                    if os.path.exists(replayfile):
+                        log.info(f"Removing file {replayfile}")
+                        os.remove(replayfile)  # TODO : this is a bit bodgey and manual
+
+                worker_manager.run(zf.namelist(), en, wk,
+                        num_workers=args.num_workers)
 
     else:
-        flow.run(replay_callback, num_runs=args.runs, until=until)
+        from multiprocessing import Process, Queue
+        import flow  # flow does some DISLAY stuff via pyautogui, so import it
+                     # here
+
+        def replay_callback(filename, run_id):
+            log.info("Enquing work item")
+            task_queue.put((filename, run_id))
+            procs = []
+        task_queue = Queue()
+        for i in range(args.num_workers):
+            p = Process(target=worker, args=(task_queue, args.collect_only)).start()
+            procs.append(p)
+        try:
+            flow.run(replay_callback, num_runs=args.runs, until=until)
+        finally:
+            for i in range(args.num_workers):
+                task_queue.put('STOP')
 except:
     log.exception("Analyzer exiting with uncaught exception")
-finally:
-    for i in range(args.num_workers):
-        task_queue.put('STOP')

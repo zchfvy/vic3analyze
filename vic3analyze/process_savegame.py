@@ -7,6 +7,7 @@ import time
 
 from sqlalchemy import select, and_
 from sqlalchemy.orm import Session
+from filelock import FileLock
 
 import tables
 from parse import parse
@@ -69,13 +70,19 @@ def process(save_file):
     sample_meta.wall_time = datetime.now()
     sample_meta.sample_cap_time_seconds = cap_duration
 
-    log.info(f"Writing to database")
+    # Check one more time for an existing run becasue race conditions can occur
     with Session(get_db()) as session:
-        if existing_run is None:
-            session.add_all([run_meta])
-        session.add_all([sample_meta])
-        session.add_all(collected_data)
-        session.commit()
+        stmt = select(RunMetadata).where(RunMetadata.id == run_meta.id)
+        existing_run = session.scalars(stmt).first()
+
+    with FileLock("v3db.lock"):
+        log.info(f"Writing to database")
+        with Session(get_db()) as session:
+            if existing_run is None:
+                session.add_all([run_meta])
+            session.add_all([sample_meta])
+            session.add_all(collected_data)
+            session.commit()
 
 
 if __name__ == '__main__':
