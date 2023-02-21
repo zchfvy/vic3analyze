@@ -93,7 +93,7 @@ try:
                     try:
                         zf.extract(m, tmpdir)
                     except zipfile.BadZipFile:
-                        log.error(f"Failed to extract file {fname}")
+                        log.error(f"Failed to extract file {m}")
                         return None
                     fname = os.path.join(tmpdir, m)
                     return(fname)
