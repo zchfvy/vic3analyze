@@ -39,14 +39,10 @@ def run(jobs_list, enque_func, worker_func, num_workers=None, worker_args=[],
     if num_workers is None:
         num_workers = 6  # TODO -use system processor count
     max_queued_jobs = num_workers
-    work_smear_time = 1.5  # TODO - use something less magic
     to_launch = num_workers
 
     try:
         for job in tqdm(jobs_list):
-            if to_launch > 0:
-                time.sleep(work_smear_time)  # smear times of processes
-                to_launch -= 1
 
             try:
                 queue_item = enque_func(job, *enqueue_args)

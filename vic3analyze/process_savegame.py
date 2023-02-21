@@ -18,13 +18,34 @@ log = logging.getLogger(__name__)
 class DuplicateSampleError(Exception):
     pass
 
+
+def _get_collectors():
+    from tables.country_basics import CountryBasics
+    from tables.market_goods import MarketGoods
+    return [CountryBasics, MarketGoods]
+
+
+def check_exists(filename):
+    """Check if a file is already processed in the DB"""
+
+    # Setup collectors here, before we load the DB
+    collectors = _get_collectors()
+    from tables.metadata import RunMetadata, SampleMetadata
+
+    # Otimization of dulicate sample skipping
+    with Session(get_db()) as session:
+        stmt = select(SampleMetadata).where(
+                SampleMetadata.filename == filename
+                )
+        existing_sample = session.scalars(stmt).first()
+        return existing_sample is not None
+
+
 def process(save_file):
     time_cap_start = time.time()
 
     # Setup collectors here, before we load the DB
-    from tables.country_basics import CountryBasics
-    from tables.market_goods import MarketGoods
-    collectors = [CountryBasics, MarketGoods]
+    collectors = _get_collectors()
 
     log.info(f"Parsing save file: {save_file}")
     parsed = parse(save_file)
@@ -41,7 +62,7 @@ def process(save_file):
         if existing_run is not None:
             run_meta = existing_run
 
-    sample_meta = SampleMetadata.collect(parsed, run_meta)
+    sample_meta = SampleMetadata.collect(os.path.basename(save_file), parsed, run_meta)
 
     with Session(get_db()) as session:
         stmt = select(SampleMetadata).where(

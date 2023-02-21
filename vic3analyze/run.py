@@ -83,6 +83,12 @@ try:
             members = zf.namelist()
             with tempfile.TemporaryDirectory() as tmpdir:
                 def en(m):
+                    if process_savegame.check_exists(m):
+                        log.info(f"Skipping exissting sample {m}")
+                        return None
+                    else:
+                        log.info(f"New sample {m}")
+
                     log.info(f"Extracting {m} from archive")
                     try:
                         zf.extract(m, tmpdir)

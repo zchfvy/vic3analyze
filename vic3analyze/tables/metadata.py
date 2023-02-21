@@ -33,9 +33,10 @@ class SampleMetadata(Base):
 
     wall_time: Mapped[datetime] = mapped_column(DateTime)
     sample_cap_time_seconds: Mapped[int] = mapped_column()
+    filename: Mapped[str] = mapped_column()
 
     @staticmethod
-    def collect(replay_data, run_obj):
+    def collect(filename, replay_data, run_obj):
         # TODO : assertation that run_obj actually comes from the same replay
         ml = replay_data
         meta = ml['meta_data']
@@ -45,4 +46,5 @@ class SampleMetadata(Base):
                 run_id=ml['playthrough_id'],
                 game_date=datetime(*date_vals),
                 sample_cap_time_seconds=None,
-                wall_time=None)
+                wall_time=None,
+                filename=filename)
