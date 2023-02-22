@@ -8,10 +8,12 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 
 log = logging.getLogger(__name__)
 
+STOP = 'STOP'
+
 
 def _worker(worker_func, task_queue, worker_args):
     try:
-        for item in iter(task_queue.get, 'STOP'):
+        for item in iter(task_queue.get, STOP):
             try:
                 worker_func(item, *worker_args)
             except KeyboardInterrupt:
@@ -21,7 +23,9 @@ def _worker(worker_func, task_queue, worker_args):
                 time.sleep(1)  # Back off a bit to controll error rate
                 task_queue.put(item)
     except KeyboardInterrupt:
-        log.warning("Aborting process thread")
+        log.warning("Aborting worker process thread")
+    log.info("Worker thread completed all tasks")
+    task_queue.put(STOP)
 
 
 def run(jobs_list, enque_func, worker_func, num_workers=None, worker_args=[],
@@ -57,11 +61,10 @@ def run(jobs_list, enque_func, worker_func, num_workers=None, worker_args=[],
                     if not procs[i].is_alive():
                         log.warning("Worker process seems to have failed, restarting")
                         procs[i] = _start_proc()
-        task_queue.put('STOP')
+        log.info("All tasks scheduled, signalling end of computation")
+        task_queue.put(STOP)
         for p in procs:
             p.join()
     except KeyboardInterrupt:
         log.error("Aborting main thread")
-        task_queue.put('STOP')
-        for _ in iter(task_queue.get, 'STOP'):
-            pass  # dump all existing things out of queue
+        task_queue.put(STOP)
