@@ -55,6 +55,7 @@ parser.add_argument('--save-dir')
 parser.add_argument('--num-workers', default=6, type=int)
 parser.add_argument('--collect-only', action='store_true')
 parser.add_argument('--process-offline-zip', default=None)
+parser.add_argument('--process-savegame', default=None)
 
 args = parser.parse_args()
 
@@ -73,8 +74,10 @@ if args.save_dir is not None:
 
 try:
 
+    if args.process_savegame is not None:
+        process_savegame.process(args.process_savegame)
 
-    if args.process_offline_zip is not None:
+    elif args.process_offline_zip is not None:
         import zipfile
         import tempfile
         import worker_manager

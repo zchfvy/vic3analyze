@@ -55,14 +55,24 @@ def run(jobs_list, enque_func, worker_func, num_workers=None, worker_args=[],
             except StopIteration:
                 break
 
+            queue_stuck_timer = 60
             while task_queue.qsize() >= max_queued_jobs:
                 time.sleep(.1)
+                queue_stuck_timer -= .1
+                if queue_stuck_timer < 0:
+                    log.warning("Queue appears to have become stuck! Terminating processes")
+                    for i in range(len(procs)):
+                        procs[i].terminate()
                 for i in range(len(procs)):
                     if not procs[i].is_alive():
                         log.warning("Worker process seems to have failed, restarting")
                         procs[i] = _start_proc()
         log.info("All tasks scheduled, signalling end of computation")
         task_queue.put(STOP)
+        # On sucessful completeion we do a long timeout join before the more
+        # agressive version later
+        for p in procs:
+            p.join(60)
     except KeyboardInterrupt:
         log.error("Aborting main thread")
         task_queue.put(STOP)
@@ -70,5 +80,11 @@ def run(jobs_list, enque_func, worker_func, num_workers=None, worker_args=[],
         log.exception("Unknown error, aborting!")
         task_queue.put(STOP)
     finally:
+        for attempt in range(5):
+            for p in procs:
+                if not p.exitcode:
+                    p.join(5)
+        # Kill anything that runs too long
         for p in procs:
-            p.join()
+            if not p.exitcode:
+                p.kill()
