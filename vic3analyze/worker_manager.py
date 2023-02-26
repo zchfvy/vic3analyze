@@ -63,8 +63,12 @@ def run(jobs_list, enque_func, worker_func, num_workers=None, worker_args=[],
                         procs[i] = _start_proc()
         log.info("All tasks scheduled, signalling end of computation")
         task_queue.put(STOP)
-        for p in procs:
-            p.join()
     except KeyboardInterrupt:
         log.error("Aborting main thread")
         task_queue.put(STOP)
+    except:
+        log.exception("Unknown error, aborting!")
+        task_queue.put(STOP)
+    finally:
+        for p in procs:
+            p.join()
