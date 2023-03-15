@@ -121,11 +121,13 @@ try:
         import flow  # flow does some DISLAY stuff via pyautogui, so import it
                      # here
 
+        task_queue = Queue()
+
         def replay_callback(filename, run_id):
             log.info("Enquing work item")
             task_queue.put((filename, run_id))
-            procs = []
-        task_queue = Queue()
+
+        procs = []
         for i in range(args.num_workers):
             p = Process(target=worker, args=(task_queue, args.collect_only)).start()
             procs.append(p)
